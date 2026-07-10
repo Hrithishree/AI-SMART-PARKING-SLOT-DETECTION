@@ -1,0 +1,255 @@
+// src/components/VideoPlayer.jsx
+import React from "react";
+
+export default function VideoPlayer({ videoRef, videoSrc, onTimeUpdate }) {
+  return (
+    <video
+      ref={videoRef}
+      src={videoSrc}
+      controls
+      width={480}
+      height={270}
+      style={{ borderRadius: 12, background: "#000" }}
+      onTimeUpdate={onTimeUpdate}
+    />
+  );
+}
+
+// src/components/MapView.jsx
+import React from "react";
+import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
+import "leaflet/dist/leaflet.css";
+import L from "leaflet";
+
+// custom marker
+const markerIcon = new L.Icon({
+  iconUrl: "https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon.png",
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
+});
+
+export default function MapView() {
+  // Coordinates of Saranathan College of Engineering 4-wheeler parking
+  const position = [10.7924, 78.6821]; // adjust if you have more precise GPS
+
+  return (
+    <div style={{ width: "500px", height: "300px", margin: "0 auto", borderRadius: 12, overflow: "hidden", boxShadow: "0 2px 8px rgba(0,0,0,0.25)" }}>
+      <MapContainer
+        center={position}
+        zoom={19} // close-up zoom
+        style={{ height: "100%", width: "100%" }}
+      >
+        {/* Satellite view */}
+        <TileLayer
+          url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
+          attribution="&copy; Esri &mdash; Source: Esri, Maxar, Earthstar Geographics, USDA, USGS, AeroGRID"
+        />
+        <Marker position={position} icon={markerIcon}>
+          <Popup>🚗 4-Wheeler Parking - Saranathan College of Engineering</Popup>
+        </Marker>
+      </MapContainer>
+    </div>
+  );
+}
+
+import React from "react";
+
+export default function SlotGrid2D({ currentFrameSlots, colors }) {
+  if (!currentFrameSlots || Object.keys(currentFrameSlots).length === 0) {
+    return <div>Loading slots...</div>;
+  }
+
+  // Ensure 12 slots
+  const slotIds = Array.from({ length: 12 }, (_, i) => `slot${i + 1}`);
+
+  return (
+    <div
+      style={{
+        display: "grid",
+        gridTemplateColumns: "repeat(4, 60px)",
+        gridGap: "10px",
+        justifyContent: "center",
+        alignItems: "center",
+      }}
+    >
+      {slotIds.map((slotId) => {
+        const status = currentFrameSlots[slotId] || "Empty"; // default to Empty
+        return (
+          <div
+            key={slotId}
+            style={{
+              width: 60,
+              height: 60,
+              background: colors[status],
+              borderRadius: 8,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              color: "#111",
+              fontWeight: "bold",
+            }}
+          >
+            {slotId.replace("slot", "")}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+// src/App.jsx
+import React, { useEffect, useRef, useState, useMemo } from "react";
+import VideoPlayer from "./components/VideoPlayer";
+import SlotGrid2D from "./components/SlotGrid2D";
+import MapView from "./components/MapView";
+import { PieChart, Pie, Cell, Tooltip, Legend, RadialBarChart, RadialBar } from "recharts";
+
+// Pastel colors
+const COLORS = { Empty: "#B5EAD7", Occupied: "#FF9AA2", Transition: "#FFD580", Total: "#C7CEEA" };
+const COLORS_RADIAL = { Empty: "#B5EAD7", Occupied: "#FFB347", Transition: "#CBA0FF" };
+
+export default function App() {
+  const videoRef = useRef(null);
+  const [slotHistory, setSlotHistory] = useState([]);
+  const [currentSlots, setCurrentSlots] = useState({});
+  const [loading, setLoading] = useState(true);
+
+  // Load JSON
+  useEffect(() => {
+    fetch("/slot_status.json")
+      .then(r => r.json())
+      .then(data => {
+        setSlotHistory(data);
+        setLoading(false);
+      })
+      .catch(err => console.error("Error loading slot_status.json:", err));
+  }, []);
+
+  const handleTimeUpdate = () => {
+    if (!videoRef.current || slotHistory.length === 0) return;
+    const currentTime = videoRef.current.currentTime;
+    const currentFrame = Math.round(currentTime * 30);
+
+    const nearest = slotHistory.reduce((prev, curr) =>
+      Math.abs(curr.frame_idx - currentFrame) < Math.abs(prev.frame_idx - currentFrame) ? curr : prev
+    );
+
+    const frameSlots = {};
+    slotHistory.forEach(row => {
+      if (row.frame_idx === nearest.frame_idx) frameSlots[row.slot_id] = row.status;
+    });
+    setCurrentSlots(frameSlots);
+  };
+
+  const summaryStats = useMemo(() => {
+    const counts = { Empty: 0, Occupied: 0, Transition: 0 };
+    Object.values(currentSlots).forEach(s => { if (counts[s] !== undefined) counts[s]++ });
+    const total = Object.keys(currentSlots).length;
+    return { ...counts, total };
+  }, [currentSlots]);
+
+  const pieData = useMemo(() => [
+    { name: "Empty", value: summaryStats.Empty },
+    { name: "Occupied", value: summaryStats.Occupied },
+    { name: "Transition", value: summaryStats.Transition },
+  ], [summaryStats]);
+
+  // Last frame radial chart
+  const lastFrameData = useMemo(() => {
+    if (slotHistory.length === 0) return [];
+    const lastFrameIdx = slotHistory[slotHistory.length - 1].frame_idx;
+    const lastFrameSlots = slotHistory.filter(f => f.frame_idx === lastFrameIdx);
+
+    const counts = { Empty: 0, Occupied: 0, Transition: 0 };
+    lastFrameSlots.forEach(f => {
+      if (counts[f.status] !== undefined) counts[f.status]++;
+    });
+
+    return [
+      { name: "Empty", value: counts.Empty, fill: COLORS_RADIAL.Empty },
+      { name: "Occupied", value: counts.Occupied, fill: COLORS_RADIAL.Occupied },
+      { name: "Transition", value: counts.Transition, fill: COLORS_RADIAL.Transition },
+    ];
+  }, [slotHistory]);
+
+  if (loading) return <div style={{ color: "#fff", textAlign: "center" }}>Loading dashboard...</div>;
+
+  return (
+    <div style={{ background: "#111", color: "#fff", minHeight: "100vh", padding: 20, fontFamily: "'Roboto', sans-serif" }}>
+      <h1 style={{ textAlign: "center", fontWeight: "bold", fontSize: 36, marginBottom: 20 }}>🚗 SMART PARKING DASHBOARD</h1>
+
+      {/* Summary Table */}
+      <div style={{ display: "flex", justifyContent: "center", gap: 20, flexWrap: "wrap", marginBottom: 30 }}>
+        <div style={{ background: COLORS.Total, borderRadius: 12, padding: 20, minWidth: 120, textAlign: "center" }}>
+          <h3>Total</h3>
+          <p style={{ fontSize: 24, fontWeight: "bold" }}>{summaryStats.total}</p>
+        </div>
+        <div style={{ background: COLORS.Empty, borderRadius: 12, padding: 20, minWidth: 120, textAlign: "center" }}>
+          <h3>Empty</h3>
+          <p style={{ fontSize: 24, fontWeight: "bold" }}>{summaryStats.Empty}</p>
+        </div>
+        <div style={{ background: COLORS.Occupied, borderRadius: 12, padding: 20, minWidth: 120, textAlign: "center" }}>
+          <h3>Occupied</h3>
+          <p style={{ fontSize: 24, fontWeight: "bold" }}>{summaryStats.Occupied}</p>
+        </div>
+        <div style={{ background: COLORS.Transition, borderRadius: 12, padding: 20, minWidth: 120, textAlign: "center" }}>
+          <h3>Transition</h3>
+          <p style={{ fontSize: 24, fontWeight: "bold" }}>{summaryStats.Transition}</p>
+        </div>
+      </div>
+
+      {/* Video */}
+      <div style={{ display: "flex", justifyContent: "center", marginBottom: 40 }}>
+        <VideoPlayer videoRef={videoRef} onTimeUpdate={handleTimeUpdate} videoSrc="/output_parking_fixed.mp4" />
+      </div>
+
+      {/* Slots + Pie */}
+      <div style={{ display: "flex", justifyContent: "center", gap: 60, flexWrap: "wrap", marginBottom: 40 }}>
+        <div>
+          <h3 style={{ textAlign: "center" }}>2D Slot View</h3>
+          <SlotGrid2D currentFrameSlots={currentSlots} colors={COLORS} />
+        </div>
+        <div>
+          <h3 style={{ textAlign: "center" }}>Pie Chart</h3>
+          <PieChart width={300} height={300}>
+            <Pie data={pieData} dataKey="value" cx="50%" cy="50%" outerRadius={100} label>
+              {pieData.map((entry, index) => <Cell key={index} fill={COLORS[entry.name]} />)}
+            </Pie>
+            <Tooltip />
+            <Legend />
+          </PieChart>
+        </div>
+      </div>
+
+      {/* Last Frame Radial Chart */}
+      <div style={{ display: "flex", justifyContent: "center", marginBottom: 40 }}>
+        <div>
+          <h3 style={{ textAlign: "center" }}>Last Frame Status</h3>
+          <RadialBarChart
+            width={400}
+            height={250}
+            cx="50%"
+            cy="50%"
+            innerRadius="20%"
+            outerRadius="90%"
+            barSize={30}
+            data={lastFrameData}
+            startAngle={180}
+            endAngle={-180}
+          >
+            <RadialBar minAngle={15} label={{ position: 'insideStart', fill: '#fff' }} background clockWise dataKey="value" />
+            <Legend iconSize={10} layout="horizontal" verticalAlign="bottom" align="center" />
+            <Tooltip />
+          </RadialBarChart>
+        </div>
+      </div>
+
+      {/* Map */}
+      <div style={{ marginTop: 20, height: 400, maxWidth: 600, marginLeft: "auto", marginRight: "auto" }}>
+        <h3 style={{ textAlign: "center", marginBottom: 10 }}>Map View</h3>
+        <MapView currentFrameSlots={currentSlots} center={[10.8328, 78.6877]} zoom={18} />
+      </div>
+    </div>
+  );
+}

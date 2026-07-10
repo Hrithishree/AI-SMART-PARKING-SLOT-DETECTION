@@ -1,0 +1,24 @@
+[
+  {
+    "timestamp": "2025-08-30 13:51:02",
+    "frame_idx": 1,
+    "slot_id": "slot1",
+    "status": "Occupied",
+    "confidence": 0.79
+  },
+  {
+    "timestamp": "2025-08-30 13:51:02",
+    "frame_idx": 1,
+    "slot_id": "slot2",
+    "status": "Occupied",
+    "confidence": 0.93
+  },
+  {
+    "timestamp": "2025-08-30 13:51:02",
+    "frame_idx": 1,
+    "slot_id": "slot3",
+    "status": "Occupied",
+    "confidence": 0.91
+  },
+  ...
+]
