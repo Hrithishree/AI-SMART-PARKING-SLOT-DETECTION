@@ -134,39 +134,40 @@ AI-SMART-PARKING-SLOT-DETECTION
 
 # 📷 Dashboard Preview
 
-## Dashboard
-
-![Dashboard](images/dashboard.png)
-
----
-
 ## Live Detection
 
-![Live Detection](images/live_detection.png)
+<img width="1600" height="900" alt="image" src="https://github.com/user-attachments/assets/152119e9-2f49-4ff8-a5a6-e294b090f211" />
 
 ---
+
+## Dashboard
+
+<img width="1600" height="730" alt="image" src="https://github.com/user-attachments/assets/53846660-fb70-4c1d-b6ec-e013566fc0ad" />
+
+---
+
 
 ## 2D Parking Slot Grid
 
-![2D Grid](images/slot_grid_2d.png)
+<img width="675" height="487" alt="image" src="https://github.com/user-attachments/assets/72474c60-4146-4380-a5e8-c39944ae9c1e" />
 
 ---
 
 ## Pie Chart Analytics
 
-![Pie Chart](images/pie_chart.png)
+<img width="537" height="501" alt="image" src="https://github.com/user-attachments/assets/27b34081-f37a-4450-9a0f-6cc2fc39b13d" />
 
 ---
 
 ## Parking Map
 
-![Map](images/map_view.png)
+<img width="1397" height="527" alt="image" src="https://github.com/user-attachments/assets/98532067-faa0-418a-aead-ef0fc4381ac3" />
 
 ---
 
 ## Last Frame Status
 
-![Status](images/last_frame_status.png)
+<img width="1093" height="440" alt="image" src="https://github.com/user-attachments/assets/2d50449a-55cc-429e-9844-2c052ed06d69" />
 
 ---
 
