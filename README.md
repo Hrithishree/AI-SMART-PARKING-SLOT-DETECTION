@@ -1,8 +1,8 @@
-<img width="1024" height="572" alt="image" src="https://github.com/user-attachments/assets/fd24ef2c-be24-4230-b871-0e379eb046f7" />
 
 
 
 # 🚗 AI Smart Parking Slot Detection System
+<img width="1024" height="572" alt="image" src="https://github.com/user-attachments/assets/fd24ef2c-be24-4230-b871-0e379eb046f7" />
 
 <p align="center">
   <img src="images/banner.png" alt="AI Smart Parking Banner" width="100%">
